@@ -44,6 +44,19 @@ cd ~/ai-billing-pipeline
 source .venv/bin/activate
 ```
 
+## Safe push routine
+Run one line at a time. Never add `-u` to a push that has a token in the URL (see Issue 3 in the mistakes log).
+
+```bash
+read -s TOKEN
+git push https://amritsharmagithub:${TOKEN}@github.com/amritsharmagithub/ai-billing-pipeline.git main
+unset TOKEN && echo "TOKEN is now: [${TOKEN}]" && grep -c "ghp_" .git/config
+git fetch origin && git status -sb
+```
+- Expected after line 3: `TOKEN is now: []` and `0`.
+- Line 4 syncs my local view of GitHub. Expected: `## main...origin/main` with nothing after it.
+- Before pasting any output anywhere, check it for anything starting with `ghp_`.
+
 ## Docs
 - `docs/build_log.md`: what I did each session
 - `docs/mistakes_log.md`: real mistakes and how I prevent them

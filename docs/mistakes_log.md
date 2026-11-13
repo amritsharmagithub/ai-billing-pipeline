@@ -130,3 +130,13 @@ I pasted that output into my chat with Claude before noticing it.
 - **Read every command before running it, and ask what each flag does, even when the command comes from an AI assistant.**
 - **Revoke first, then clean up.** If a credential is exposed, revoking it comes before anything else, because cleanup alone does not make a leaked token safe.
 - Use short expiration dates on tokens, so a leak has a time limit.
+
+### Verified
+The next push used a new token (30-day expiration, `repo` scope only) and the routine below. The token did not appear in the output, `unset TOKEN` cleared it, and `grep -c "ghp_" .git/config` returned `0`.
+
+```bash
+read -s TOKEN
+git push https://amritsharmagithub:${TOKEN}@github.com/amritsharmagithub/ai-billing-pipeline.git main
+unset TOKEN && echo "TOKEN is now: [${TOKEN}]" && grep -c "ghp_" .git/config
+git fetch origin && git status -sb
+```

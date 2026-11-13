@@ -415,3 +415,107 @@ branch 'main' set up to track 'https://amritsharmagithub:[TOKEN REMOVED]@github.
 **Notes:**
 - All four top-level items are there: `docs`, `.gitignore`, `CREDITS.md`, and `requirements.txt`.
 - The commit `01603ef` shows my username and profile picture, which confirms the Git identity fix from Issue 2 worked.
+
+### Step 23: Replace the old docs zip
+
+**What I did:** Deleted the old zip from Downloads before downloading the updated one.
+
+```bash
+(.venv) $ rm ~/Downloads/phase1_docs.zip && ls ~/Downloads | grep -i phase1
+```
+
+**Notes:**
+- No output means the old file was gone. If it had stayed, the browser would have saved the new file as `phase1_docs (1).zip`, and my unzip command would have used the old one.
+
+### Step 24: Unpack the updated docs
+
+**What I did:** Unpacked the updated docs over the old ones and checked what changed.
+
+```bash
+(.venv) $ unzip -o ~/Downloads/phase1_docs.zip -d ~/ai-billing-pipeline && git status
+...
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+	modified:   docs/build_log.md
+	modified:   docs/lessons_learned.md
+	modified:   docs/mistakes_log.md
+
+Untracked files:
+	docs/screenshots/phase1_04_github_first_push.png
+```
+
+**Notes:**
+- Git only listed the files that actually changed. The unchanged files were overwritten with identical copies, so Git ignored them.
+- `Your branch is up to date with 'origin/main'` shows the cleanup in Step 21 worked: my branch now tracks `origin`, which has no token in it.
+
+### Step 25: Commit the updated docs
+
+**What I did:** Staged, reviewed, and committed the updated docs.
+
+```bash
+(.venv) $ git add . && git status --short && git commit -m "Phase 1: log Git identity fix, token incident, and first push"
+M  docs/build_log.md
+M  docs/lessons_learned.md
+M  docs/mistakes_log.md
+A  docs/screenshots/phase1_04_github_first_push.png
+[main 5ffd724] Phase 1: log Git identity fix, token incident, and first push
+ 4 files changed, 274 insertions(+)
+ create mode 100644 docs/screenshots/phase1_04_github_first_push.png
+```
+
+**Notes:**
+- `M` means modified and `A` means added. 4 files, as expected.
+- No identity warning this time, which confirms the Git name and email settings from Step 16 are working.
+
+### Step 26: Push with a new token, the safe way
+
+**What I did:** Created a new token (classic, `repo` scope only, 30-day expiration), pushed **without `-u`**, then cleared the token and checked that nothing was saved.
+
+```bash
+(.venv) $ read -s TOKEN
+(.venv) $ git push https://amritsharmagithub:${TOKEN}@github.com/amritsharmagithub/ai-billing-pipeline.git main
+...
+To https://github.com/amritsharmagithub/ai-billing-pipeline.git
+   01603ef..5ffd724  main -> main
+(.venv) $ unset TOKEN && echo "TOKEN is now: [${TOKEN}]" && grep -c "ghp_" .git/config
+TOKEN is now: []
+0
+```
+
+**Notes:**
+- No `-u`, so Git did not save the URL, and the token did not appear in the output.
+- `TOKEN is now: []` proves the token was cleared from the terminal session.
+- `0` proves no token was written to `.git/config`.
+- This is now my standard push routine (see `project_brief.md`).
+
+### Step 27: Sync my local view of GitHub
+
+```bash
+(.venv) $ git fetch origin && git status -sb
+From https://github.com/amritsharmagithub/ai-billing-pipeline
+   01603ef..5ffd724  main       -> origin/main
+## main...origin/main
+```
+
+**Notes:**
+- Pushing to the full URL does not update my Mac's record of what GitHub has. `git fetch origin` refreshes it without needing a token, because the repo is public.
+- `## main...origin/main` with nothing after it means my Mac and GitHub match.
+
+### Session 1 summary
+
+**Done:**
+- Project folder, Python 3.13 virtual environment, dbt-core 1.12.7 + dbt-duckdb 1.11.1 + DuckDB 2.0.0
+- `requirements.txt`, `.gitignore`, Git repo, docs folder, and two commits pushed to GitHub
+
+**Issues hit and fixed (see the [mistakes log](mistakes_log.md)):**
+1. SSL certificate error during install: ran the python.org certificate script
+2. First commit made without my Git name and email: set them and amended the commit before pushing
+3. GitHub token exposed by `-u` on the first push: revoked it, cleaned `.git/config`, and set a safe push routine
+
+**Decision made (see the [decisions log](decisions_log.md)):** build on dbt v1 now and upgrade to dbt v2 in Phase 8.
+
+**What I'd tell myself at the start:** setup is where small environment problems show up. Reading each output line, especially warnings on commands that "worked," caught two of the three issues before they caused harm.
+
+**Next:** watch Part 1 of the MotherDuck series and take notes in `video_notes.md`, then start Phase 2 (generating billing data in Python).
