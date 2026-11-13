@@ -21,3 +21,27 @@ The quick fix for SSL errors that you often find online is to disable certificat
 ### 4. A virtual environment has to be activated every time
 Creating `.venv` does not turn it on. Every new Terminal window needs `source .venv/bin/activate`, and `(.venv)` in the prompt shows it is active.
 *Source: build log, Session 1, Step 3.*
+
+## Git and GitHub
+
+### 5. A command can succeed and still have a problem
+My first commit worked, but Git warned that it had guessed my name and email. If I had ignored the warning, none of my commits would have counted on my GitHub profile. I now read warnings even when a command succeeds, the same way a reconciliation can "balance" while still hiding a problem.
+*Source: Issue 2 in the [mistakes log](mistakes_log.md).*
+
+### 6. Fix commits before pushing, not after
+`git commit --amend` can fix the last commit, but only safely before it is pushed. After pushing, changing a commit rewrites history that others may already have. Checking commits before pushing makes fixes cheap.
+*Source: Issue 2 in the [mistakes log](mistakes_log.md).*
+
+### 7. Keep a private email out of public commits
+Commit emails are public. GitHub's noreply address links commits to my profile without showing my personal email.
+*Source: build log, Session 1, Step 16.*
+
+## Security
+
+### 8. Revoke first, clean up second
+When my token was exposed, the first step was revoking it on GitHub. Removing it from my files and screen mattered too, but only revoking made the leaked value useless. In payments work, this is the same order as with a compromised card: block it first, then investigate.
+*Source: Issue 3 in the [mistakes log](mistakes_log.md).*
+
+### 9. Read every command before running it, even from an AI
+The command that leaked my token came from my AI assistant. It looked like my usual push command with one extra flag (`-u`), and I didn't ask what that flag did. AI help is useful, but I'm still responsible for what runs on my machine.
+*Source: Issue 3 in the [mistakes log](mistakes_log.md).*

@@ -249,3 +249,169 @@ nothing added to commit but untracked files present (use "git add" to track)
 - `.venv/` does not appear in the untracked list, which confirms `.gitignore` is working.
 - `docs/` does not appear yet because Git ignores empty folders.
 - I set up Git at the start of the project, so the commit history shows the project growing phase by phase.
+
+### Step 13: Add the docs to the project
+
+**What I did:** Unpacked the docs I had been keeping during the session (logs, credits, screenshots) into the project folder.
+
+```bash
+(.venv) $ unzip -o ~/Downloads/phase1_docs.zip -d ~/ai-billing-pipeline && git status
+Archive:  /Users/amritsharma/Downloads/phase1_docs.zip
+  inflating: /Users/amritsharma/ai-billing-pipeline/CREDITS.md
+  inflating: /Users/amritsharma/ai-billing-pipeline/docs/build_log.md
+  ...
+  inflating: /Users/amritsharma/ai-billing-pipeline/docs/screenshots/phase1_03_dbt_version.png
+On branch main
+
+No commits yet
+
+Untracked files:
+	.gitignore
+	CREDITS.md
+	docs/
+	requirements.txt
+```
+
+**Notes:**
+- The first try failed with `cannot find or open` because I had not downloaded the zip yet. After downloading it, the command worked.
+- `-o` overwrites older copies without asking, so I can reuse the same command at the end of each session.
+
+### Step 14: Stage files and review before committing
+
+**What I did:** Staged all files and checked the list before saving anything.
+
+```bash
+(.venv) $ git add . && git status
+Changes to be committed:
+	new file:   .gitignore
+	new file:   CREDITS.md
+	new file:   docs/build_log.md
+	new file:   docs/decisions_log.md
+	new file:   docs/lessons_learned.md
+	new file:   docs/mistakes_log.md
+	new file:   docs/project_brief.md
+	new file:   docs/screenshots/phase1_01_ssl_certificate_error.png
+	new file:   docs/screenshots/phase1_02_install_certificates_fix.png
+	new file:   docs/screenshots/phase1_03_dbt_version.png
+	new file:   requirements.txt
+```
+
+**Notes:**
+- 11 files staged, with nothing from `.venv/` and no secrets.
+- I review the staged list before every commit. It's the last chance to catch something that should not go to GitHub, like checking a batch before releasing a settlement file.
+
+### Step 15: First commit (with a warning)
+
+**What I did:** Made the first commit and checked the history.
+
+```bash
+(.venv) $ git commit -m "Phase 1: project setup, Python 3.13 venv, dbt-duckdb, and docs" && git log --oneline
+[main (root-commit) 4890308] Phase 1: project setup, Python 3.13 venv, dbt-duckdb, and docs
+ Committer: Amrit Sharma <amritsharma@Amrits-MacBook-Pro.local>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+...
+ 11 files changed, 511 insertions(+)
+...
+4890308 (HEAD -> main) Phase 1: project setup, Python 3.13 venv, dbt-duckdb, and docs
+```
+
+**Notes:**
+- The commit worked, but Git had never been told my name and email on this Mac, so it guessed `amritsharma@Amrits-MacBook-Pro.local`.
+- GitHub links commits to a profile by email. With this address, my commits would not link to my profile or count on my contribution graph.
+- I caught it before pushing. See Issue 2 in the [mistakes log](mistakes_log.md).
+
+### Step 16: Set my Git name and email
+
+**What I did:** Set my name and GitHub's private noreply email for all Git projects on this Mac.
+
+```bash
+(.venv) $ git config --global user.name "Amrit Sharma" && git config --global user.email "<my GitHub noreply email>" && git config --global --list | grep user
+user.name=Amrit Sharma
+user.email=<my GitHub noreply email>
+```
+
+**Notes:**
+- `--global` applies these settings to every Git project on my Mac, so this is a one-time setup.
+- I used GitHub's noreply address (from github.com/settings/emails) instead of my personal email. Commit emails are public, and the noreply address still links commits to my profile.
+
+### Step 17: Fix the author on the first commit
+
+**What I did:** Replaced the first commit with a copy that has my correct name and email.
+
+```bash
+(.venv) $ git commit --amend --reset-author --no-edit && git log --format="%h %an <%ae> %s"
+[main 01603ef] Phase 1: project setup, Python 3.13 venv, dbt-duckdb, and docs
+ 11 files changed, 511 insertions(+)
+ ...
+01603ef Amrit Sharma <my GitHub noreply email> Phase 1: project setup, Python 3.13 venv, dbt-duckdb, and docs
+```
+
+**Notes:**
+- The commit ID changed from `4890308` to `01603ef`. Changing a commit creates a new commit.
+- `--no-edit` kept the same commit message.
+- Amending was safe only because I had not pushed yet. Changing commits that are already on GitHub rewrites shared history, so I avoid that.
+
+### Step 18: Create the empty repo on GitHub
+
+**What I did:** Created a public repo named `ai-billing-pipeline` on github.com/new.
+
+**Notes:**
+- Description: "Billing and revenue data pipeline for a fictional AI API company. Python, DuckDB, dbt, Airflow. Documented as a learning project."
+- I left "Add a README", ".gitignore", and "license" unchecked. My project already had files locally, and if GitHub had created its own, the two histories would not match and my first push would be rejected.
+
+### Step 19: Connect the local project to GitHub
+
+**What I did:** Saved the GitHub repo address as `origin`.
+
+```bash
+(.venv) $ git remote add origin https://github.com/amritsharmagithub/ai-billing-pipeline.git && git remote -v
+origin	https://github.com/amritsharmagithub/ai-billing-pipeline.git (fetch)
+origin	https://github.com/amritsharmagithub/ai-billing-pipeline.git (push)
+```
+
+**Notes:**
+- `origin` is the standard name for the main online copy of a project.
+- The saved address has no token in it. The token is only used at push time and is never stored in the project settings.
+
+### Step 20: First push to GitHub (worked, but exposed my token)
+
+**What I did:** Entered my token with `read -s TOKEN` and pushed.
+
+```bash
+(.venv) $ git push -u https://amritsharmagithub:${TOKEN}@github.com/amritsharmagithub/ai-billing-pipeline.git main
+Enumerating objects: 15, done.
+...
+To https://github.com/amritsharmagithub/ai-billing-pipeline.git
+ * [new branch]      main -> main
+branch 'main' set up to track 'https://amritsharmagithub:[TOKEN REMOVED]@github.com/amritsharmagithub/ai-billing-pipeline.git/main'.
+```
+
+**Notes:**
+- The push worked. All 11 files are on GitHub.
+- The `-u` flag made Git save the full push URL, **including my token**, into `.git/config` on my Mac, and it printed the token in the terminal. I had pasted that output into my chat with Claude, so the token was exposed there too.
+- I have removed the token from this log. See Issue 3 in the [mistakes log](mistakes_log.md).
+
+### Step 21: Remove the token from the project settings
+
+**What I did:** Replaced the saved URL with `origin`, fetched GitHub's copy of `main`, and checked that no token was left.
+
+```bash
+(.venv) $ git config branch.main.remote origin && git fetch origin && grep -c "ghp_" .git/config
+0
+```
+
+**Notes:**
+- `0` means no token is left in `.git/config`.
+- I also cleared the terminal (Cmd + K) so the token could not end up in a screenshot.
+- I revoked the exposed token at github.com/settings/tokens. That is the step that made it safe.
+
+### Step 22: Check the repo on GitHub
+
+**What I did:** Opened the repo in my browser to confirm the push.
+
+![The repo on GitHub after the first push](screenshots/phase1_04_github_first_push.png)
+
+**Notes:**
+- All four top-level items are there: `docs`, `.gitignore`, `CREDITS.md`, and `requirements.txt`.
+- The commit `01603ef` shows my username and profile picture, which confirms the Git identity fix from Issue 2 worked.
