@@ -32,3 +32,8 @@ PLANS = {
         "overage_cents_per_million": 100,      # $1.00 per extra million tokens
     },
 }
+
+
+# The "month-end close" date: only payments received on or before this date are included.
+# June invoices are dated July 1, so this gives them a month to be paid.
+REPORT_DATE = date(2026, 7, 31)

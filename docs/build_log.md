@@ -765,3 +765,69 @@ data/
 ```
 - Added `data/` to `.gitignore`. The CSVs and DuckDB file are rebuilt in seconds by the generator and come out identical every time (fixed seed), so the code is the real record.
 - `>>` adds a line to the end of a file. A single `>` would have replaced the whole file.
+
+### Step 20: Commit and push Phase 2 progress
+- Checked the docs zip size against the size sent (927,394 bytes), unpacked it, reviewed the staged list (19 files, nothing from `data/`, `.venv/`, or `__pycache__/`), and committed `38c14eb`.
+- Pushed with the safe routine: `7c16e3f..38c14eb  main -> main`, `TOKEN is now: []`, `0` tokens in `.git/config`, and `## main...origin/main`.
+
+### Step 21: Build the payments table (clean version)
+- Added `REPORT_DATE = date(2026, 7, 31)` to `config.py`: the month-end close date. Only payments received on or before it are included.
+- Added `generate_payments()`: most invoices are paid in full 5–40 days after the invoice date (due in 30, so some are late). About 1 in 20 are never paid; these feed the aging report.
+
+```bash
+(.venv) $ python -m generator.main
+...
+Total billed: $183,711.96
+Payments: 259 rows (as of 2026-07-31)
+Total collected: $174,173.57
+Unpaid invoices: 17 ($9,538.39)
+...
+  raw.payments: 259 rows
+```
+
+**Checked by hand (accounts receivable):**
+- $183,711.96 billed − $174,173.57 collected = **$9,538.39** unpaid ✓
+- 259 paid invoices + 17 unpaid = **276** invoices ✓
+
+### Step 22: Plant the errors, with an answer key
+- Added `generator/errors.py` (created with `touch`, per Issue 5). It plants 20 errors in the clean invoices and payments and writes an **answer key**, `raw.planted_errors`, listing each one. Each invoice and its payments get at most one error, so every break has exactly one cause.
+- Before handing me the code, Claude rebuilt my generator on its side and tested it. That caught a bug in its first draft (invoices don't store the overage price, so it has to be looked up from the subscription) and math errors that were too small to matter ($0.53). Both were fixed before I ran anything. See Decision 3 (update).
+
+```bash
+(.venv) $ wc -l generator/errors.py generator/main.py && python -m generator.main && python run_sql.py queries/02_invoice_checks.sql
+     162 generator/errors.py
+      71 generator/main.py
+...
+Invoices: 274 rows
+Payments: 264 rows (as of 2026-07-31)
+Total billed: $183,019.01
+Total collected: $175,105.81
+
+Planted errors: 20
+  cutoff_error: 3
+  duplicate_payment: 3
+  invoice_math_error: 3
+  short_payment_unexplained: 2
+  short_payment_wire_fee: 2
+  unapplied_cash: 3
+  unbilled_usage_missing_invoice: 2
+  unbilled_usage_understated: 2
+...
+  raw.planted_errors: 20 rows
+┌──────────────────┬──────────────┬─────────────┬────────────────────────┐
+│ invoices_checked │ usage_breaks │ math_breaks │ months_with_no_invoice │
+├──────────────────┼──────────────┼─────────────┼────────────────────────┤
+│              274 │            2 │           3 │                      2 │
+└──────────────────┴──────────────┴─────────────┴────────────────────────┘
+```
+
+![Errors planted, and the control check finding the invoice errors](screenshots/phase2_05_errors_planted.png)
+
+**Before and after:** the same control check showed **0 / 0 / 0** on the clean data (Step 18) and now shows **2 / 3 / 2**, exactly the planted invoice errors (2 understated usage, 3 math errors, 2 missing invoices). The payment errors need new checks, which come in Phases 4 and 5.
+
+### Phase 2 summary
+- **Built:** a reproducible generator for 6 tables (customers, subscriptions, usage events, invoices, payments, and the planted-errors answer key), loaded into DuckDB.
+- **Checked:** row counts after loading, accounts receivable by hand (billed − collected = unpaid), and a two-sided invoice control check, before and after planting errors.
+- **Issues:** 4 and 5 (old code run by mistake, files in the wrong folder), both fixed by changing my process.
+- **Decisions:** 3, 4, and 5 (data design, price snapshots and whole months, rounding rule).
+- **Next:** Phase 3, dbt models, following Part 2 of the MotherDuck series.

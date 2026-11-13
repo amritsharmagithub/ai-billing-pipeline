@@ -124,6 +124,26 @@ The project needs fictional billing data with realistic errors for the dbt tests
 - Errors that really happen in billing make the project realistic and give me real stories for interviews.
 - Each error maps to a check in Phase 4 or 5, and the Phase 5 report will suggest a correcting journal entry for each break, using my month-end close experience.
 
+### Update: final version as built (November 13, 2026)
+20 errors planted by `generator/errors.py`, with an answer key in `raw.planted_errors`:
+
+| Error | How it's planted | Count |
+|---|---|---|
+| Unapplied cash | Payment with no invoice reference (matches an unpaid invoice by customer and amount) | 3 |
+| Duplicate payment | An existing payment recorded again under a new payment ID | 3 |
+| Short payment, wire fee | Wire payment exactly $25.00 short (bank fee deducted) | 2 |
+| Short payment, unexplained | Paid 5–20% less, no reason | 2 |
+| Unbilled usage, missing invoice | Invoice never created (also leaves a gap in invoice numbers) | 2 |
+| Unbilled usage, understated | Invoice shows 20–40% less usage than happened | 2 |
+| Invoice math error | Overage left off the total (only invoices with at least $20 of overage) | 3 |
+| Month-end cutoff | Payment dated in the prior month, before the invoice existed | 3 |
+| Old unpaid invoices | Not planted: they occur naturally (about 1 in 20 invoices are never paid) | — |
+
+**Changes from the first version, and why:**
+- **Short payments split by cause.** Reviewing the plan from a hiring manager's point of view: a $25.00 wire fee and an unexplained short payment are fixed differently (write off to bank fee expense vs. collect from the customer). Planting both lets the Phase 5 report recommend the right action for each.
+- **Materiality.** Math errors only use invoices with at least $20 of overage. The first draft produced errors as small as $0.53, which a reviewer would rightly question.
+- **One cause per break.** Each invoice and its payments get at most one error, and payments for changed invoices follow the new invoice total, so no error creates a second, unintended break.
+
 ---
 
 ## Decision 4: Price snapshots and whole-month subscriptions

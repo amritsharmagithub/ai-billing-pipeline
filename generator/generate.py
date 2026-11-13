@@ -190,3 +190,46 @@ def generate_invoices(subscriptions, usage_events):
 
     return invoices
 
+
+
+# How customers pay: card is most common, wire is used mostly by big customers.
+PAYMENT_METHODS = ["card", "ACH", "wire"]
+PAYMENT_METHOD_WEIGHTS = [50, 35, 15]
+
+
+def generate_payments(invoices, report_date):
+    """Build the payments table: money received against invoices.
+
+    These are the CORRECT payments. Errors are planted in a separate step.
+    - Most invoices are paid in full, 5-40 days after the invoice date.
+      Invoices are due in 30 days, so some payments arrive late.
+    - About 1 in 20 invoices are never paid. These feed the aging report.
+    - Only payments received on or before the report date are included (month-end cutoff).
+    """
+    payments = []
+    payment_number = 1
+
+    for inv in invoices:
+        # About 1 in 20 invoices are never paid.
+        if random.random() < 0.05:
+            continue   # "continue" skips to the next invoice
+
+        payment_date = inv["invoice_date"] + timedelta(days=random.randint(5, 40))
+
+        # Not received yet as of the report date, so it doesn't exist in our data.
+        if payment_date > report_date:
+            continue
+
+        payments.append({
+            "payment_id": f"P{payment_number:04d}",            # P0001, P0002, ...
+            "invoice_id": inv["invoice_id"],
+            "customer_id": inv["customer_id"],
+            "payment_date": payment_date,
+            "amount_cents": inv["total_cents"],                 # paid in full
+            "payment_method": random.choices(PAYMENT_METHODS, weights=PAYMENT_METHOD_WEIGHTS)[0],
+        })
+
+        payment_number += 1
+
+    return payments
+

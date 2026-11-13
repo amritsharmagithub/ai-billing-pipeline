@@ -77,3 +77,11 @@ Creating files in the wrong folder happened twice, so I stopped fixing files one
 ### 16. Look for the business story in the numbers
 My first query showed that 4 Enterprise customers (8%) bring in about 61% of monthly fees. That's revenue concentration, which a finance team would want to know about. The SQL was simple; the useful part was what the result means.
 *Source: build log, Phase 2, Step 16.*
+
+### 17. Test a process against known answers
+The planted-errors answer key works like a test file in settlement work: before trusting a reconciliation, run it on data where you already know every break, and check that it finds all of them. My invoice control check went from 0 / 0 / 0 on clean data to 2 / 3 / 2 after planting, matching the answer key exactly.
+*Source: build log, Phase 2, Steps 18 and 22.*
+
+### 18. Know what to do about each break, not just find it
+A $25 wire fee and an unexplained short payment both show up as "short," but they're fixed differently: write off the fee to bank fee expense, or follow up with the customer. Planning for that difference is the judgment a finance team expects from an analyst.
+*Source: Decision 3 (update) in the [decisions log](decisions_log.md).*
