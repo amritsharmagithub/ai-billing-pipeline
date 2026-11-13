@@ -519,3 +519,249 @@ From https://github.com/amritsharmagithub/ai-billing-pipeline
 **What I'd tell myself at the start:** setup is where small environment problems show up. Reading each output line, especially warnings on commands that "worked," caught two of the three issues before they caused harm.
 
 **Next:** watch Part 1 of the MotherDuck series and take notes in `video_notes.md`, then start Phase 2 (generating billing data in Python).
+
+---
+
+## Session 2 — Friday, November 13, 2026 (later the same morning)
+
+**Goal for this session:** Save the end-of-Phase-1 docs to GitHub, watch Part 1 of the MotherDuck series, and start Phase 2.
+
+### Step 1: Check the docs zip before unpacking
+
+**What I did:** My browser saved the new download as `phase1_docs (1).zip`. I deleted the older copy, then checked the size of the one I kept.
+
+```bash
+(.venv) $ ls -l ~/Downloads/"phase1_docs (1).zip"
+-rw-r--r--@ 1 amritsharma  staff  609645 Nov 13 09:56 /Users/amritsharma/Downloads/phase1_docs (1).zip
+```
+
+**Notes:**
+- The size I was told to expect (725,087 bytes) was the total size of the files *inside* the zip, not the zip itself. Zip files are compressed, so they are smaller.
+- Comparing against the actual file that was sent (609,645 bytes) confirmed it was the right one. Lesson: check against the real source, not a number someone tells me.
+- File names with spaces or brackets need quotes in Terminal: `~/Downloads/"phase1_docs (1).zip"`.
+
+### Step 2: Unpack the updated docs
+
+```bash
+(.venv) $ unzip -o ~/Downloads/"phase1_docs (1).zip" -d ~/ai-billing-pipeline && git status --short
+...
+ M docs/build_log.md
+ M docs/mistakes_log.md
+ M docs/project_brief.md
+?? docs/video_notes.md
+```
+
+**Notes:**
+- ` M` means modified, and `??` means a new file Git has not seen before.
+- 3 docs updated, plus the new `video_notes.md`.
+
+### Step 3: Commit the end-of-Phase-1 docs
+
+```bash
+(.venv) $ git add . && git status --short && git commit -m "Phase 1: add session summary, video notes, and safe push routine"
+M  docs/build_log.md
+M  docs/mistakes_log.md
+M  docs/project_brief.md
+A  docs/video_notes.md
+[main 7c16e3f] Phase 1: add session summary, video notes, and safe push routine
+ 4 files changed, 181 insertions(+)
+ create mode 100644 docs/video_notes.md
+```
+
+### Step 4: Push with the safe routine
+
+```bash
+(.venv) $ read -s TOKEN
+(.venv) $ git push https://amritsharmagithub:${TOKEN}@github.com/amritsharmagithub/ai-billing-pipeline.git main
+(.venv) $ unset TOKEN && echo "TOKEN is now: [${TOKEN}]" && grep -c "ghp_" .git/config
+TOKEN is now: []
+0
+(.venv) $ git fetch origin && git status -sb
+From https://github.com/amritsharmagithub/ai-billing-pipeline
+   5ffd724..7c16e3f  main       -> origin/main
+## main...origin/main
+```
+
+**Notes:**
+- `5ffd724..7c16e3f` in the fetch output confirms GitHub received the new commit.
+- Token cleared, nothing saved in `.git/config`, and my Mac matches GitHub.
+- **Phase 1 is complete.**
+
+### Step 5: Watch Part 1 of the MotherDuck series
+Watched the full video and wrote short notes on the key takeaways and what I'll do differently for billing. See [video notes](video_notes.md).
+
+### Step 6: Re-scope the project
+Stepped back to check the plan against my target roles (analytics, finance, billing, possibly data science). Dropped Airflow, made the dbt v2 upgrade optional, and switched to lighter logging for routine steps. See Decision 2 in the [decisions log](decisions_log.md).
+
+### Step 7: Design the data and the planted errors
+Designed 6 tables and 7 planted errors, each tied to my settlement work at Fiserv. See Decision 3 in the [decisions log](decisions_log.md).
+
+---
+
+## Phase 2: Generate billing data
+
+### Step 8: Create the generator folder
+```bash
+(.venv) $ mkdir -p generator && touch generator/__init__.py generator/config.py generator/main.py && ls generator
+__init__.py	config.py	main.py
+```
+- `config.py` holds settings (prices, period, seed), `main.py` holds the main flow, and `__init__.py` makes the folder a Python package. This follows the "main file reads like a list of steps" approach from the MotherDuck video.
+
+### Step 9: Set up VS Code
+- Installed VS Code (desktop) and the Microsoft Python extension (which includes Pylance and the Python Debugger). Skipped signing in, and left GitHub Copilot off so the code I write is my own.
+- Opened the project folder. VS Code's Source Control panel showed my 3 commits and the 3 new generator files.
+- I commit in Terminal, not with VS Code's Commit button, so every commit goes through my review routine.
+- **Open issue:** the Python extension stayed on "Python extension loading..." for over 15 minutes, even after `Developer: Reload Window`. It doesn't block the work (I write code in VS Code and run it in Terminal), so I moved on and will come back to it.
+
+### Step 10: Write the settings in `config.py`
+- Added the random seed (42), number of customers (50), billing period (January 1 to June 30, 2026), and three plans (Starter, Pro, Enterprise), each with a monthly fee, included tokens, and an overage price.
+- All money is stored in **whole cents**, because decimals like 0.1 can't be stored exactly by computers and cause rounding breaks.
+- Running `config.py` by itself prints nothing, which is expected: it only stores settings. I checked that the settings load correctly:
+
+```bash
+(.venv) $ python -c "from generator.config import PLANS, BILLING_START, BILLING_END; print(PLANS['Pro']); print(BILLING_START, 'to', BILLING_END)"
+{'monthly_fee_cents': 50000, 'included_tokens': 50000000, 'overage_cents_per_million': 150}
+2026-01-01 to 2026-06-30
+```
+- Worked example: a Pro customer using 60 million tokens pays the $500 fee + 10 million extra tokens × $1.50 per million = **$515.00** (51,500 cents).
+
+### Step 11: Build the customers table
+- Added `generator/generate.py` with `generate_customers()`: 50 customers, each with an ID (`C001`–`C050`), a made-up company name, a country (US most common), and a signup date in 2025.
+- Added `generator/main.py`, the main flow: set the seed, build the tables, print a quick check.
+- Ran it with `python -m generator.main`. The `-m` runs it as part of the `generator` package, so imports between my files work.
+
+```bash
+(.venv) $ python -m generator.main
+Customers: 50 rows
+{'customer_id': 'C001', 'company_name': 'North Labs', 'country': 'GB', 'signup_date': datetime.date(2025, 8, 28)}
+{'customer_id': 'C002', 'company_name': 'Swift Health', 'country': 'US', 'signup_date': datetime.date(2025, 1, 19)}
+{'customer_id': 'C003', 'company_name': 'Nova Analytics', 'country': 'IN', 'signup_date': datetime.date(2025, 12, 15)}
+```
+- Company names can repeat by chance. That's realistic, and it's why every customer has a unique ID. In billing, records are matched on IDs, never names.
+- Ran it a second time and got exactly the same rows, which proves the seed works. Anyone who clones the repo gets the same data, so my test and reconciliation results can be checked by someone else.
+
+### Step 12: Build the subscriptions table
+- Added `generate_subscriptions()`: one plan per customer, picked with weights (60% Starter, 30% Pro, 10% Enterprise). About 1 in 5 start on Feb 1 or Mar 1, and about 1 in 10 cancel at the end of March, April, or May.
+- Prices are copied onto each subscription ("price snapshot"), and subscriptions start and end on whole months to avoid proration. See Decision 4.
+- My first run showed the old output, because I had pasted an older version of the code. See Issue 4 in the [mistakes log](mistakes_log.md).
+
+```bash
+(.venv) $ python -m generator.main
+Customers: 50 rows
+Subscriptions: 50 rows
+Plans: Counter({'Pro': 23, 'Starter': 23, 'Enterprise': 4})
+Cancelled: 6
+First subscription: {'subscription_id': 'S001', 'customer_id': 'C001', 'plan': 'Pro', 'monthly_fee_cents': 50000, 'included_tokens': 50000000, 'overage_cents_per_million': 150, 'start_date': datetime.date(2026, 1, 1), 'end_date': None}
+```
+- The plan mix (23 / 23 / 4) is not exactly 60 / 30 / 10. With only 50 customers, random picks can land well away from the target. That's normal for small samples, and it's still a realistic mix.
+
+### Step 13: Build the usage_events table
+- Added `generate_usage_events()`: one row per subscription per active day, with the model used and the tokens used. Each customer uses 50%–150% of their included tokens per month, so about half will have overage. Daily usage varies by up to 30%.
+- The usage data is kept clean on purpose. The "unbilled usage" error is planted later, in the invoices.
+- The first run failed with `ImportError: cannot import name 'generate_usage_events'`, because only `main.py` had been updated. The `wc -l` check before running showed `generate.py` was still the old length, which pointed straight at the cause. After saving the new `generate.py`, it worked:
+
+```bash
+(.venv) $ wc -l generator/generate.py generator/main.py && python -m generator.main
+     124 generator/generate.py
+      33 generator/main.py
+...
+Usage events: 8325 rows
+Total tokens used: 27,998,804,417
+First usage event: {'usage_id': 'U00001', 'customer_id': 'C001', 'subscription_id': 'S001', 'usage_date': datetime.date(2026, 1, 1), 'model': 'lumen-small', 'tokens_used': 998789}
+```
+- Lesson: read the **last line** of an error first. Here it named the exact missing function.
+
+### Step 14: Save the tables to CSV and DuckDB
+- Added `generator/db.py`. It writes each table to `data/raw/<table>.csv` (like exports from Lumen AI's systems), then loads each CSV into `data/lumen_billing.duckdb` as a table in the `raw` schema.
+- Each run uses `CREATE OR REPLACE TABLE`, so rerunning never creates duplicate rows (the idempotent-writes idea from the MotherDuck video).
+- Python's `None` becomes an empty CSV cell, which DuckDB reads as `NULL`.
+
+```bash
+(.venv) $ python -m generator.main
+...
+Wrote 3 CSV files to data/raw/
+Loading into data/lumen_billing.duckdb:
+  raw.customers: 50 rows
+  raw.subscriptions: 50 rows
+  raw.usage_events: 8325 rows
+```
+- Row counts in DuckDB match the counts in Python, so nothing was lost or duplicated during the load.
+
+![Generator output and DuckDB load](screenshots/phase2_02_data_loaded.png)
+
+### Step 15: Add a helper for running SQL
+- Added `run_sql.py` in the project folder. It runs a `.sql` file against the DuckDB database and prints the result as a table: `python run_sql.py queries/<file>.sql`.
+- It opens the database **read-only**, so a query can never change the data, like read-only access to a production ledger.
+- I keep every query in a `queries/` folder, so my data exploration is saved and visible in the repo.
+
+### Step 16: First SQL query, plan mix
+- Wrote `queries/01_plan_mix.sql`: customers and monthly subscription fees per plan.
+- The first run failed with `FileNotFoundError`, because VS Code had created the file in the project folder instead of inside `queries/`. I found it with `find . -name "01_plan_mix*" -not -path "./.venv/*"` and moved it with `mv`.
+
+```bash
+(.venv) $ python run_sql.py queries/01_plan_mix.sql
+┌────────────┬───────────┬──────────────────┐
+│    plan    │ customers │ monthly_fees_usd │
+├────────────┼───────────┼──────────────────┤
+│ Enterprise │         4 │          20000.0 │
+│ Pro        │        23 │          11500.0 │
+│ Starter    │        23 │           1150.0 │
+└────────────┴───────────┴──────────────────┘
+```
+
+![First SQL query: plan mix](screenshots/phase2_03_first_query.png)
+
+**What the result shows:**
+- The 4 Enterprise customers (8% of customers) bring in about **61%** of monthly subscription fees ($20,000 of $32,650). That's **revenue concentration**: losing one Enterprise customer would cost more than all 23 Starter customers combined. Finance teams watch this closely.
+- The dollar column came out as `double` (a decimal number type that can have tiny rounding errors). That's fine for a quick look, but in the dbt models I'll use an exact `DECIMAL` type for money.
+
+### Step 17: Build the invoices table (clean version)
+- Added `generate_invoices()`: one invoice per subscription per active month. It sums each month's usage, works out overage (never below 0), prices it, and adds the subscription fee. Invoices are dated the 1st of the next month and due 30 days later (Net 30).
+- Overage is rounded to the nearest cent, with half a cent rounding up, using whole-number math only. See Decision 5.
+- `main.py` now checks the overage math with an `assert` before building any invoices: the Pro example (10 million extra tokens at 150 cents per million) must equal 1,500 cents, or the script stops.
+- These are the **correct** invoices. Errors will be planted in a separate step, so I always know exactly which errors were added.
+- The `wc -l` check caught that `main.py` hadn't been updated on the first try (still the old length), so I replaced it before trusting the output.
+
+```bash
+(.venv) $ python -m generator.main
+...
+Invoices: 276 rows
+Invoices with overage: 127
+Total billed: $183,711.96
+...
+  raw.invoices: 276 rows
+```
+- 127 of 276 invoices (46%) have overage, close to the "about half" the usage design aimed for.
+
+### Step 18: Control check on the clean invoices
+- Wrote `queries/02_invoice_checks.sql`, a reconciliation that compares each invoice to its source data:
+  1. **Usage check:** invoice `usage_tokens` vs. the sum of `usage_events` for that subscription and month
+  2. **Math check:** `total_cents` vs. `subscription_fee_cents + overage_cents`
+  3. **Missing check:** months with usage but **no invoice at all**. Checks 1 and 2 start from invoices, so they can't find a missing invoice. This check starts from usage, so it's two-sided matching, like reconciling both the client side and the bank side.
+- The file first ended up in `queries/queries/` (see Issue 5). After moving it:
+
+```bash
+(.venv) $ python run_sql.py queries/02_invoice_checks.sql
+┌──────────────────┬──────────────┬─────────────┬────────────────────────┐
+│ invoices_checked │ usage_breaks │ math_breaks │ months_with_no_invoice │
+├──────────────────┼──────────────┼─────────────┼────────────────────────┤
+│              276 │            0 │           0 │                      0 │
+└──────────────────┴──────────────┴─────────────┴────────────────────────┘
+```
+![Control check on clean invoices: 0 breaks](screenshots/phase2_04_invoice_checks_clean.png)
+
+- **0 breaks on clean data.** After planting errors, I'll run this exact query again, and it should find them. Same check, before and after.
+
+### Step 19: Keep generated data off GitHub
+```bash
+(.venv) $ echo "data/" >> .gitignore && tail -3 .gitignore && git status --short
+.env
+.DS_Store
+data/
+ M .gitignore
+?? generator/
+?? queries/
+?? run_sql.py
+```
+- Added `data/` to `.gitignore`. The CSVs and DuckDB file are rebuilt in seconds by the generator and come out identical every time (fixed seed), so the code is the real record.
+- `>>` adds a line to the end of a file. A single `>` would have replaced the whole file.

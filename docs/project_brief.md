@@ -5,36 +5,41 @@ I keep this file so I (or anyone helping me) can pick up the project with the sa
 ## Project
 **AI Billing & Revenue Pipeline.** A data pipeline for a fictional AI API company, "Lumen AI": subscriptions with included credits, usage overage, invoices, payments, credits, and refunds, with deliberate data errors to find and reconcile.
 
-**Stack:** Python 3.13, DuckDB, dbt (dbt-duckdb, v1 for now), Airflow, GitHub, Hex dashboard.
+**Goal in one sentence:** Show that I can take messy billing data and turn it into revenue numbers people can trust: model it, test it, reconcile it, and explain the breaks.
 
-**Phases:**
-1. Setup
+**Target roles:** analytics, finance, and billing roles (possibly data science). Not data engineering.
+
+**Stack:** Python 3.13, DuckDB, dbt (dbt-duckdb, v1), GitHub, dashboard tool to be decided in Phase 6.
+
+**Phases** (see Decision 2):
+1. Setup (done)
 2. Generate billing data (Python)
 3. dbt models
 4. dbt tests
-5. Reconciliation report
-6. Airflow
-7. Dashboard
-8. Publish (README, logs, dbt v2 upgrade)
+5. Reconciliation report (the centerpiece)
+6. Dashboard
+7. Publish (README and docs)
+
+**Optional, after the core is finished:** a short analysis notebook (data science angle), dbt v2 upgrade. Airflow is dropped.
 
 ## About me
 - About 4 years as a Senior Settlement Analyst at Fiserv/First Data (Mastercard reconciliation).
 - B.S. in Computer Science. Career break from 2022 to now.
-- Target roles: billing, payments, and revenue data at AI companies.
+- Target roles: analytics, finance, and billing roles at AI companies (possibly data science).
 - Previous projects: `sre-incident-agent`, `model-selection-eval`.
 
 ## Main goal of this project
 Document the learning process for a hiring manager: what I built, how I built it, the mistakes I made, how I prevent them now, and what I learned, including from the videos.
 
 ## Rules
-1. **Document as I go.** Commands, outputs, screenshots, and workflows, written down at each step, never from memory at the end.
+1. **Document as I go, at the right level.** Full detail for mistakes, decisions, and lessons. Short entries for routine steps. Screenshots for results only. Never written from memory at the end.
 2. **Log every real mistake** in this format: what happened, why, how I fixed it, how I prevent it now. Never invent mistakes.
 3. **Write down lessons** after each step and video section, including what I did differently from the video for billing data.
 4. **Always give credit:** in `CREDITS.md`, in the README, and in code comments when an idea came from somewhere else.
 5. **Show the learning on GitHub:** the README opens with what I learned and links to all the logs.
 6. **Checkpoint after every step:** screenshot (if needed) and output saved, before moving to the next step.
-7. **I write the SQL and Python myself.** Claude explains, gives structure, and reviews. Claude Code is for debugging help only.
-8. **One command at a time**, explained in simple, plain English.
+7. **AI-assisted code, my understanding.** Claude may write or suggest code. I review it, run it, and make sure I can explain every line, because interviewers will ask. I credit AI help honestly.
+8. **One step at a time**, explained in simple, plain English. For code: Claude first asks me to type it. If I reply "list below", Claude writes the full code for me to copy.
 9. **Writing style:** simple, plain, professional English that shows I'm learning. Not flashy.
 10. **Security:** never put tokens or keys in chat or in files. Push to GitHub with `read -s TOKEN`, then `unset TOKEN`.
 

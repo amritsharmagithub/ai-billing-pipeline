@@ -20,4 +20,4 @@ This project would not exist without the people and resources below. Thank you.
 - **certifi** (trusted certificate list): https://github.com/certifi/python-certifi
 
 ## AI assistance
-- **Claude (Anthropic)** explained concepts, gave step-by-step structure, helped diagnose errors, and reviewed my work. I wrote the project's SQL and Python myself.
+- **Claude (Anthropic)** explained concepts, gave step-by-step structure, helped write and review code, and helped diagnose errors. I designed the billing data and planted errors from my settlement experience, ran and checked every step, and can explain all of the code.
