@@ -66,3 +66,31 @@ I watched the full video (November 13, 2026). I kept these notes short on purpos
 
 ### Source
 Overview and timestamps are based on the video page and transcript at the Part 1 link above. All credit for the content goes to Mehdi Ouazza and MotherDuck.
+
+---
+
+## Part 2: Transformation with dbt and DuckDB
+
+### What I learned (key takeaways)
+I watched the full video (November 13, 2026). Short notes on purpose; Phase 3 applies them hands-on.
+
+1. **dbt doesn't process data itself.** It's a client that turns SQL into commands for a database. Usually that's a cloud warehouse, but with the DuckDB adapter, all the work happens **locally**, in the same Python process. No cloud needed.
+2. **Start a project with `dbt init`** and pick the DuckDB adapter. It creates the folder structure, a `dbt_project.yml`, and example models. He deletes the examples.
+3. **Keep `profiles.yml` in the repo** (instead of the home folder) so the connection settings are versioned with the project, using environment variables for anything secret.
+4. **Explore first, then write the model.** He tests the query by hand, then moves it into dbt.
+5. **Declare sources in a `sources.yml`** and refer to them with `{{ source(...) }}` instead of hardcoding table locations. This also makes testing possible, because a source can be swapped for test data.
+6. **Useful DuckDB SQL:** `GROUP BY ALL` (group by every non-aggregated column) and a **hash of the key columns** as a unique row ID.
+7. **Choose how a model is saved ("materialized")** in `dbt_project.yml`, for example as a `table`.
+8. **Unit tests without the cloud:** mock the source data with SQL, define the expected result with SQL, and compare. Because DuckDB runs locally, tests are fast and can run anywhere. He used the `dbt-unit-testing` package because dbt's own unit tests (dbt 1.8) weren't released yet.
+9. **Hooks and macros:** a `post-hook` can run a macro after a model builds (he exports to S3). Settings can differ by **target** (`dev` = local DuckDB, `prod` = MotherDuck), including incremental loads in prod.
+
+### What I'll do differently for billing
+| In the video | In my project | Why |
+|---|---|---|
+| Source data is Parquet files on S3 | Sources are the `raw.*` tables already in my local DuckDB file | My generator already loaded them (Phase 2) |
+| Processes a time window (start/end date variables) and incremental loads | Rebuild everything each run | My data is small (6 months, ~9,000 rows), so a full rebuild takes seconds and is simpler to reason about |
+| `dbt-unit-testing` package | dbt's **built-in** unit tests | I'm on dbt 1.12, where unit tests are built in (added in 1.8, after the video) |
+| Explores with the DuckDB CLI | Explores with my `run_sql.py` helper | I don't use Homebrew, and the helper already works |
+| Exports to S3 and syncs to MotherDuck (dev/prod targets) | One local target only | No cloud costs; everything runs on my Mac |
+| One model (daily download stats) | Several models in layers: **staging** (clean each raw table) → **marts** (business tables like invoice status and monthly revenue) | Billing has several related tables that need to be joined and reconciled |
+| Money not involved | Convert cents to an exact `DECIMAL` type for dollars | Avoids rounding errors in reports |

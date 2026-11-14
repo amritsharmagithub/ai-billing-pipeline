@@ -831,3 +831,7 @@ Planted errors: 20
 - **Issues:** 4 and 5 (old code run by mistake, files in the wrong folder), both fixed by changing my process.
 - **Decisions:** 3, 4, and 5 (data design, price snapshots and whole months, rounding rule).
 - **Next:** Phase 3, dbt models, following Part 2 of the MotherDuck series.
+
+### Step 23: Commit and push Phase 2
+- Committed `a684c7c` ("Phase 2: add payments and 20 planted errors with an answer key") and pushed with the safe routine. `git fetch` showed `38c14eb..a684c7c`, and `## main...origin/main` confirmed my Mac and GitHub match.
+- **Phase 2 is complete.**
