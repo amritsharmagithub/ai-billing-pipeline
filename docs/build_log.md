@@ -974,3 +974,31 @@ Total billed minus total collected ($183,019.01 − $175,105.81) also equals $7,
 - **Built:** 8 reconciliation rules in dbt, a check against the answer key with a control test that fails the build if anything is missed, and a readable Markdown report with actions and journal entries.
 - **Result:** 20 of 20 planted errors found, 0 missed, 0 extra. $3,546.30 in breaks, plus 4 invoices ($650.00) aged 90+ days. Accounts receivable ties out.
 - **Next:** Phase 5, the dashboard (watch Part 3 of the MotherDuck series first).
+
+---
+
+## Phase 5: Dashboard (Hex)
+
+### Step 1: Choose the tool
+- Chose Streamlit for the dashboard. Evidence (the tool in the MotherDuck video) has changed since the video, and Hex needs a work email to sign up. See Decision 7.
+
+### Step 2: Build the Streamlit dashboard
+- Installed Streamlit (1.67.0) and updated `requirements.txt`.
+- Added `dashboard/app.py`. It reads the dbt models from the local DuckDB file (read-only) and shows: 4 headline numbers, billed vs. collected by month, total billed by plan, open balances by aging bucket, reconciliation breaks by type, and a break details table with a filter. Every chart has hover tooltips and a short caption explaining what it means.
+- Chart colors come from a palette checked for color-blind readers.
+- Run from the project folder with `streamlit run dashboard/app.py`, then open http://localhost:8501.
+- After reviewing the first version, I made 4 fixes: a small gap between the billed and collected bars, full labels on the breaks chart, all 5 aging buckets shown (including empty ones), and the details table sorted in the same order as the reconciliation report.
+
+![Dashboard: headline numbers and revenue charts](screenshots/phase5_01_dashboard_top.png)
+![Dashboard: aging and reconciliation breaks](screenshots/phase5_02_dashboard_charts.png)
+![Dashboard: break details](screenshots/phase5_03_dashboard_details.png)
+
+**What the dashboard shows:**
+- The 4 Enterprise customers account for $111,575.12 of $183,019.01 billed (about 61%): revenue concentration.
+- Almost no cash arrived in January, before any invoice was sent; the small amount that did is a cutoff error.
+- Most of the open balance is current (June invoices, due July 31).
+
+### Phase 5 summary
+- **Built:** a Streamlit dashboard on top of the dbt models, with 4 charts, headline numbers, and a filterable break details table.
+- **Decision:** 7 (Streamlit instead of Evidence or Hex).
+- **Next:** Phase 6, publish (README, docs cleanup, make the repo public).

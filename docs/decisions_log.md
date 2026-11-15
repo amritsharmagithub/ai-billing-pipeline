@@ -193,3 +193,17 @@ Adding 500,000 (half of 1,000,000) before whole-number division rounds to the ne
 **Why:** This is how dbt is normally used, it keeps each model and its checks together, and it saves time. Tests act like automated controls (unique IDs, valid links between tables, totals that add up), which matter for billing and finance roles.
 
 **New plan:** 3. dbt models + tests · 4. Reconciliation report · 5. Dashboard · 6. Publish
+
+---
+
+## Decision 7: Use Streamlit for the dashboard
+**Date:** November 15, 2026 · **Phase:** 5
+
+**Decision:** Build the dashboard with Streamlit, a Python library for data apps.
+
+**Why:**
+- The MotherDuck video uses Evidence, but Evidence has changed since then. Its docs now focus on a hosted product, and I couldn't confirm it reads a local DuckDB file.
+- My next choice was Hex, but signing up needs a work email, which I don't have during my career break.
+- Streamlit is free, installs with one `pip install`, reads my local DuckDB file directly, and keeps the dashboard in my repo as code. Mehdi also covers Streamlit in a separate MotherDuck video comparing BI-as-code tools.
+
+**Trade-off:** Streamlit shows Python app-building more than notebook-style analysis.
