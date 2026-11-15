@@ -915,3 +915,62 @@ Done. PASS=22 WARN=1 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=23
 - **Found automatically:** 3 unapplied cash payments (test warning), 3 duplicate payments (credit balances), 4 short payments (partially paid), and a cutoff error (cash in January before any invoice).
 - **Decision:** 6 (tests added while building the models).
 - **Next:** Phase 4, the reconciliation report.
+
+---
+
+## Phase 4: Reconciliation report
+
+### Step 1: Reconciliation rules in dbt
+- Added a `reports` layer and `rpt_reconciliation_breaks`: 8 rules that find breaks using only the billing data (never the answer key). Each break has a dollar amount, details, a suggested action, and a suggested journal entry (debit and credit accounts).
+- Added `rpt_reconciliation_vs_answer_key`, which compares the breaks with the planted errors, and a control test, `assert_reconciliation_finds_all_planted_errors`, which fails the build if any planted error is missed or an extra break appears.
+- Because this code was long, I added the files from a zip instead of pasting, which avoids copy mistakes.
+- Full build: `Done. PASS=33 WARN=1 ERROR=0` (9 models, 25 tests).
+
+**Result: 20 of 20 planted errors found, 0 missed, 0 extra.**
+
+| Error type | Planted | Found | Missed | Extra |
+|---|---|---|---|---|
+| cutoff_error | 3 | 3 | 0 | 0 |
+| duplicate_payment | 3 | 3 | 0 | 0 |
+| invoice_math_error | 3 | 3 | 0 | 0 |
+| short_payment_unexplained | 2 | 2 | 0 | 0 |
+| short_payment_wire_fee | 2 | 2 | 0 | 0 |
+| unapplied_cash | 3 | 3 | 0 | 0 |
+| unbilled_usage_missing_invoice | 2 | 2 | 0 | 0 |
+| unbilled_usage_understated | 2 | 2 | 0 | 0 |
+
+![Reconciliation vs. answer key: 20 of 20 found](screenshots/phase4_01_reconciliation_vs_answer_key.png)
+
+- The 3 unapplied cash payments were matched to the exact invoices in the answer key, by customer and amount.
+- The report also lists 4 invoices aged 90+ days ($650.00), which are collections items, not planted errors. Invoices already listed as short payments are left out of the aged list, so each problem is counted once.
+
+### Step 2: Readable reconciliation report
+- Added `reports/build_reconciliation_report.py`. It reads the dbt results (read-only) and writes [`reports/reconciliation_report.md`](../reports/reconciliation_report.md), a report a finance manager can read on GitHub.
+- Sections: summary, accounts receivable tie-out, breaks by type, suggested journal entries (totaled by account), details for every break, aging, and the check against the planted errors.
+- Run from the project folder with `python -m reports.build_reconciliation_report`, the same way as the generator, so it can use the generator's settings.
+
+```bash
+(.venv) $ python -m reports.build_reconciliation_report
+Wrote reports/reconciliation_report.md (24 breaks, 20 of 20 planted errors found)
+```
+
+**Accounts receivable tie-out:**
+
+| Line | Amount |
+|---|---|
+| Total billed | $183,019.01 |
+| Less: payments applied to invoices | −$174,017.73 |
+| = Open balance on invoices | $9,001.28 |
+| Less: unapplied cash | −$1,088.08 |
+| = Net amount still owed by customers | $7,913.20 |
+
+Total billed minus total collected ($183,019.01 − $175,105.81) also equals $7,913.20, so the report ties out.
+
+![Report summary](screenshots/phase4_02a_report_summary.png)
+![Accounts receivable tie-out](screenshots/phase4_02b_report_ar_tieout.png)
+![Breaks by type](screenshots/phase4_02c_report_breaks_by_type.png)
+
+### Phase 4 summary
+- **Built:** 8 reconciliation rules in dbt, a check against the answer key with a control test that fails the build if anything is missed, and a readable Markdown report with actions and journal entries.
+- **Result:** 20 of 20 planted errors found, 0 missed, 0 extra. $3,546.30 in breaks, plus 4 invoices ($650.00) aged 90+ days. Accounts receivable ties out.
+- **Next:** Phase 5, the dashboard (watch Part 3 of the MotherDuck series first).

@@ -35,3 +35,7 @@ models:
       # Business tables for reports and the dashboard. Stored as tables, so they are fast to query.
       +materialized: table
       +schema: marts
+    reports:
+      # Finance reports built on top of staging and marts (for example, the reconciliation).
+      +materialized: table
+      +schema: reports
