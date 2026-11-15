@@ -10,3 +10,4 @@ dbt_packages/
 data/
 .user.yml
 docs/project_brief.md
+docs/video_notes.md
