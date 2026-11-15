@@ -1,0 +1,14 @@
+# Connection settings for dbt.
+# Kept inside the project (instead of ~/.dbt) so the setup is saved with the code,
+# following the MotherDuck video.
+
+lumen_billing:            # must match "profile" in dbt_project.yml
+  target: dev             # which connection to use by default
+  outputs:
+    dev:
+      type: duckdb
+      # The same database the generator loads into.
+      # The path is relative to this folder: up two levels, then into data/.
+      path: ../../data/lumen_billing.duckdb
+      threads: 1
+      

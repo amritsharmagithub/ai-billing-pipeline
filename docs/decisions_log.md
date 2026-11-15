@@ -182,3 +182,14 @@ Adding 500,000 (half of 1,000,000) before whole-number division rounds to the ne
 - Whole-number math avoids decimal rounding errors entirely.
 - One documented rule means anyone can recalculate any invoice and get the same number, which is what makes reconciliation possible.
 - An `assert` in `main.py` checks the rule against a known example (10,000,000 tokens at 150 cents per million = 1,500 cents) before any invoices are built.
+
+---
+
+## Decision 6: Add dbt tests while building the models
+**Date:** November 14, 2026 · **Phase:** 3
+
+**Decision:** Instead of a separate testing phase, I add a few tests right after building each dbt model.
+
+**Why:** This is how dbt is normally used, it keeps each model and its checks together, and it saves time. Tests act like automated controls (unique IDs, valid links between tables, totals that add up), which matter for billing and finance roles.
+
+**New plan:** 3. dbt models + tests · 4. Reconciliation report · 5. Dashboard · 6. Publish

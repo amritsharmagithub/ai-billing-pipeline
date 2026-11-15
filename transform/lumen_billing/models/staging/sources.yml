@@ -1,0 +1,23 @@
+# Raw tables loaded by the Python generator (generator/main.py).
+# Models refer to them with {{ source('raw', '<table>') }} instead of hardcoding raw.<table>.
+
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: "Raw billing data for Lumen AI, as exported from its systems (loaded by the Python generator)."
+    tables:
+      - name: customers
+        description: "One row per customer company."
+      - name: subscriptions
+        description: "One row per subscription: the customer's plan, prices, and start and end dates."
+      - name: usage_events
+        description: "One row per subscription per day: API tokens used."
+      - name: invoices
+        description: "One row per monthly invoice: subscription fee, overage, and total, in cents."
+      - name: payments
+        description: "One row per payment received, in cents. Some payments have no invoice reference."
+      - name: planted_errors
+        description: "Answer key: the 20 errors planted on purpose. Used only to check the reconciliation in Phase 4."
+        

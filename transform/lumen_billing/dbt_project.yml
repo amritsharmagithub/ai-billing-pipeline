@@ -1,0 +1,37 @@
+# Project settings for the Lumen AI billing dbt project.
+
+name: 'lumen_billing'
+version: '1.0.0'
+
+# Which connection to use (from profiles.yml).
+profile: 'lumen_billing'
+
+# Where dbt looks for each kind of file.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # folders removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+# Settings the models can use, like config.py in the generator.
+vars:
+  # The month-end close date: balances and days past due are measured as of this date.
+  # Matches REPORT_DATE in generator/config.py.
+  report_date: '2026-07-31'
+
+# How each layer of models is built.
+models:
+  lumen_billing:
+    staging:
+      # Light cleanup of each raw table. Views are saved queries, always up to date.
+      +materialized: view
+      +schema: staging
+    marts:
+      # Business tables for reports and the dashboard. Stored as tables, so they are fast to query.
+      +materialized: table
+      +schema: marts

@@ -835,3 +835,83 @@ Planted errors: 20
 ### Step 23: Commit and push Phase 2
 - Committed `a684c7c` ("Phase 2: add payments and 20 planted errors with an answer key") and pushed with the safe routine. `git fetch` showed `38c14eb..a684c7c`, and `## main...origin/main` confirmed my Mac and GitHub match.
 - **Phase 2 is complete.**
+
+---
+
+## Phase 3: dbt models and tests
+
+### Step 1: Create the dbt project
+- Ran `dbt init lumen_billing` inside a new `transform/` folder (same layout as the MotherDuck video) and chose DuckDB.
+- dbt created the standard folders (`models/`, `tests/`, `macros/`, `seeds/`, ...), example models, and a connection profile in `~/.dbt/profiles.yml`. Its built-in check passed: `Connection test: [OK connection ok]`.
+
+### Step 2: Connect dbt to the project database
+- Removed dbt's example models and the empty `dev.duckdb` it created during setup.
+- Added `profiles.yml` inside the project (following the MotherDuck video), pointing at `../../data/lumen_billing.duckdb`, the database the generator loads. `dbt debug`: `All checks passed!`
+- Set up two layers in `dbt_project.yml`: **staging** (views, light cleanup) and **marts** (tables, for reports). dbt names their schemas `main_staging` and `main_marts`.
+- Declared the 6 raw tables in `models/staging/sources.yml`, so models use `{{ source('raw', ...) }}` instead of hardcoded table names. `dbt ls --resource-type source` listed all 6.
+
+### Step 3: Staging models and tests
+- Built 5 staging models (`stg_customers`, `stg_subscriptions`, `stg_usage_events`, `stg_invoices`, `stg_payments`). Each one only renames columns and adds dollar columns. No business logic, and no fixing data, so the planted errors stay visible.
+- Added a macro, `cents_to_dollars`, so every model converts cents to dollars the same way, with an exact `DECIMAL(18,2)` type.
+- Added 18 tests in `_stg_models.yml`: unique and not-null IDs, valid links between tables, and allowed values for plans and payment methods.
+- The test "every payment has an invoice" is set to **warn**. It flagged **3 payments**, which are the 3 planted unapplied cash payments. This is the first planted error caught automatically.
+
+```
+Done. PASS=22 WARN=1 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=23
+```
+
+![Staging models and tests: 22 passed, 1 warning for unapplied cash](screenshots/phase3_01_staging_tests.png)
+
+### Step 4: First mart, `fct_invoices` (accounts receivable view)
+- Built `fct_invoices`: one row per invoice with amount paid, balance due, payment status (paid / partially paid / unpaid / overpaid), days past due, and an aging bucket, as of the report date.
+- Added `report_date: '2026-07-31'` to `dbt_project.yml` as a project setting, so the date isn't hardcoded in the SQL.
+- Added 4 tests. Full build: `Done. PASS=27 WARN=1 ERROR=0` (6 models, 22 tests; the one warning is still the 3 unapplied cash payments).
+
+**Aging as of July 31, 2026:**
+
+| Aging bucket | Invoices | Balance |
+|---|---|---|
+| settled | 251 | $0.00 |
+| current | 9 | $8,234.49 |
+| 1–30 days | 2 | $76.26 |
+| 61–90 days | 1 | $502.39 |
+| 90+ days | 8 | $788.72 |
+| credit balance | 3 | −$600.58 |
+
+![Aging summary as of July 31, 2026](screenshots/phase3_02_aging_summary.png)
+
+- The 3 credit balances are the 3 duplicate payments, and the partially paid invoices include the 4 short payments. Both are planted errors showing up in the business view.
+- Applied payments ($174,017.73) plus unapplied cash ($1,088.08) equal total collected ($175,105.81), so the mart ties out to the source data.
+
+### Step 5: Second mart, `fct_monthly_revenue` (billed vs. collected)
+- Built `fct_monthly_revenue`: one row per month with amounts **billed** (by the month the service was used, split into subscription and overage) and cash **collected** (by the month the payment arrived). Added 2 tests. Full build: `Done. PASS=30 WARN=1 ERROR=0`.
+
+| Month | Subscription | Overage | Total billed | Collected |
+|---|---|---|---|---|
+| Jan 2026 | $29,900.00 | $582.69 | $30,482.69 | $500.00 |
+| Feb 2026 | $31,550.00 | $389.73 | $31,939.73 | $16,536.51 |
+| Mar 2026 | $32,650.00 | $781.09 | $33,368.30 | $38,574.28 |
+| Apr 2026 | $32,050.00 | $645.26 | $32,666.62 | $24,126.11 |
+| May 2026 | $27,550.00 | $288.26 | $27,838.26 | $38,689.92 |
+| Jun 2026 | $26,500.00 | $223.41 | $26,723.41 | $28,803.91 |
+| Jul 2026 | $0.00 | $0.00 | $0.00 | $27,875.08 |
+
+![Billed vs. collected by month](screenshots/phase3_03_monthly_revenue.png)
+
+**What it shows:**
+- Overage is a small share of billing (about $2,910 of $183,019), so Lumen AI's revenue comes mostly from predictable subscription fees.
+- **$500.00 collected in January is a red flag.** The first invoices went out February 1, so no cash should arrive in January. It's payment P0084, dated January 29 for an invoice dated February 1: one of the planted cutoff errors, spotted from a monthly summary.
+
+### Step 6: Lineage graph
+- Ran `dbt docs generate && dbt docs serve` to build dbt's documentation site locally, then opened the lineage graph.
+
+![dbt lineage graph: raw sources, staging models, and marts](screenshots/phase3_04_lineage_graph.png)
+
+- The graph shows the full flow: 6 raw sources (green) → 5 staging models → 2 marts. `fct_invoices` combines invoices and payments, and `fct_monthly_revenue` combines billed and collected amounts.
+- `raw.planted_errors` has no arrows on purpose. It's the answer key, used only to check the reconciliation in Phase 4.
+
+### Phase 3 summary
+- **Built:** a dbt project on DuckDB with 5 staging models, 2 marts, a `cents_to_dollars` macro, and 24 tests. One command (`dbt build`) rebuilds and checks everything in about 2 seconds.
+- **Found automatically:** 3 unapplied cash payments (test warning), 3 duplicate payments (credit balances), 4 short payments (partially paid), and a cutoff error (cash in January before any invoice).
+- **Decision:** 6 (tests added while building the models).
+- **Next:** Phase 4, the reconciliation report.
